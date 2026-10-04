@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Group Directory</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#18212b;font-family:Arial,sans-serif}
+.wrap{max-width:1400px;margin:auto;padding:10px}header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+h1{font-size:clamp(20px,3vw,30px);margin:4px 0 10px}.toolbar{display:flex;gap:7px}
+button{border:1px solid #d5dbe1;background:#fff;border-radius:8px;padding:10px 13px;font-size:14px}
+.primary{background:#1769aa;color:#fff;border-color:#1769aa}.danger{color:#b42318}
+.editor{display:none;background:#fff;border:1px solid #d5dbe1;border-radius:10px;padding:12px;margin-bottom:10px}.editor.show{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}label{font-size:12px;color:#66727e}
+input,select{display:block;width:100%;margin-top:4px;padding:10px;border:1px solid #d5dbe1;border-radius:7px;font-size:14px}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.hint{font-size:12px;color:#66727e}
+.photo{position:relative;width:100%;overflow:hidden;background:#111;border-radius:10px;touch-action:manipulation}.photo img{display:block;width:100%;height:auto}
+.hot{position:absolute;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;border:2px solid transparent;background:transparent;cursor:pointer;touch-action:none}
+.edit .hot{border-color:#1769aa;background:#1769aa22}
+.pop{display:none;position:absolute;z-index:10;width:260px;max-width:calc(100vw - 20px);padding:13px;background:white;border:1px solid #d5dbe1;border-radius:11px;box-shadow:0 10px 30px #0003}
+.pop.show{display:block}.pop h2{font-size:18px;margin:0 25px 9px 0}.row{margin:6px 0}.lab{font-size:10px;text-transform:uppercase;color:#6c7782}.val{font-size:14px;line-height:1.3;word-break:break-word}
+.x{position:absolute;right:5px;top:4px;border:0;background:none;font-size:22px;padding:2px 7px}
+@media(max-width:700px){.wrap{padding:7px}.toolbar{width:100%}.toolbar button{flex:1}.grid{grid-template-columns:1fr}.hot{width:38px;height:38px}
+.pop{position:fixed!important;left:10px!important;right:10px!important;bottom:10px!important;top:auto!important;width:auto!important;max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><h1>Group Directory</h1><div class="toolbar"><button id="edit">Edit / Add People</button><button id="reset" class="danger">Reset</button></div></header>
+<div id="editor" class="editor">
+<div class="grid">
+<label>Name<input id="name"></label>
+<label>Job / Sector<input id="job"></label>
+<label>Present Location<input id="present"></label>
+<label>Permanent Location<input id="permanent"></label>
+<label>Mob Number<input id="mob"></label>
+<label>Popup Position<select id="pos"><option>auto</option><option>right</option><option>left</option><option>above</option><option>below</option></select></label>
+</div>
+<div class="actions"><button id="save" class="primary">Save Person</button><button id="add">+ Add Person</button><button id="del" class="danger">Delete Person</button><button id="close">Close</button></div>
+<div class="hint">Desktop: hover a person. Mobile: tap a person. Edit mode: drag the blue hotspot onto the face.</div>
+</div>
+<div id="photo" class="photo"><img src="image1.jpg" alt="Group photo"></div>
+</div>
+<script>
+const D=Array.from({length:31},(_,i)=>({id:i+1,name:"STUDENT"+(i+1),job:"",present:"",permanent:"",mob:"",pos:"auto",
+x:[7,13,18,23,28,33,38,43,48,53,58,63,68,73,78,83,88,93,10,20,30,40,50,60,70,80,90,25,45,65,85][i],
+y:[57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,36,36,36,36,36,36,36,36,36,20,20,20,20][i]}));
+let P=JSON.parse(localStorage.getItem("groupDirectoryPeople")||"null")||D, editMode=false,sel=null;
+const $=id=>document.getElementById(id), photo=$("photo");
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function store(){localStorage.setItem("groupDirectoryPeople",JSON.stringify(P))}
+function closeP(){document.querySelectorAll(".pop").forEach(x=>x.classList.remove("show"))}
+function popup(p){
+return '<button class="x">×</button><h2>'+esc(p.name)+'</h2>'+
+'<div class="row"><div class="lab">Job / Sector</div><div class="val">'+esc(p.job)||"—"+'</div></div>'+
+'<div class="row"><div class="lab">Present Location</div><div class="val">'+(esc(p.present)||"—")+'</div></div>'+
+'<div class="row"><div class="lab">Permanent Location</div><div class="val">'+(esc(p.permanent)||"—")+'</div></div>'+
+'<div class="row"><div class="lab">Mob Number</div><div class="val">'+(esc(p.mob)||"—")+'</div></div>'}
+function place(pop,h,p){
+if(innerWidth<=700){return}
+const r=photo.getBoundingClientRect(),q=h.getBoundingClientRect(),w=260;
+let l=q.left-r.left+45,t=q.top-r.top-5;
+if(p.pos=="left")l-=w+60;if(p.pos=="above"){l-=w/2;t-=190}if(p.pos=="below"){l-=w/2;t+=50}
+if(p.pos=="auto"&&l+w>r.width)l-=w+60;
+pop.style.left=Math.max(6,Math.min(l,r.width-w-6))+"px";pop.style.top=Math.max(6,t)+"px"}
+function show(i,h){closeP();let p=photo.querySelector('.pop[data-i="'+i+'"]');place(p,h,P[i]);p.classList.add("show")}
+function render(){
+closeP();photo.querySelectorAll(".hot,.pop").forEach(x=>x.remove());
+P.forEach((p,i)=>{
+let h=document.createElement("div");h.className="hot";h.style.left=p.x+"%";h.style.top=p.y+"%";
+let q=document.createElement("div");q.className="pop";q.dataset.i=i;q.innerHTML=popup(p);photo.append(h,q);
+h.onmouseenter=()=>!editMode&&show(i,h);h.onmouseleave=()=>!editMode&&setTimeout(()=>q.classList.remove("show"),250);
+h.onclick=e=>{e.stopPropagation();editMode?select(i):toggle(i,h)};
+h.ontouchend=e=>{if(!editMode){e.preventDefault();toggle(i,h)}};
+q.querySelector(".x").onclick=()=>q.classList.remove("show");
+if(editMode)drag(h,i);
+})}
+function toggle(i,h){let q=photo.querySelector('.pop[data-i="'+i+'"]'),was=q.classList.contains("show");closeP();if(!was)show(i,h)}
+function select(i){sel=i;let p=P[i];$("name").value=p.name;$("job").value=p.job;$("present").value=p.present;$("permanent").value=p.permanent;$("mob").value=p.mob;$("pos").value=p.pos}
+function drag(h,i){let down=false;h.onpointerdown=e=>{down=true;h.setPointerCapture(e.pointerId);e.preventDefault()};
+h.onpointermove=e=>{if(!down)return;let r=photo.getBoundingClientRect();P[i].x=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100));P[i].y=Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100));h.style.left=P[i].x+"%";h.style.top=P[i].y+"%"};
+h.onpointerup=()=>{down=false;store()}}
+$("edit").onclick=()=>{editMode=!editMode;$("editor").classList.toggle("show",editMode);photo.classList.toggle("edit",editMode);$("edit").textContent=editMode?"Exit Edit Mode":"Edit / Add People";render()};
+$("save").onclick=()=>{if(sel===null)return alert("Select a person first.");let p=P[sel];p.name=$("name").value.trim()||"STUDENT"+(sel+1);p.job=$("job").value.trim();p.present=$("present").value.trim();p.permanent=$("permanent").value.trim();p.mob=$("mob").value.trim();p.pos=$("pos").value;store();render();select(sel)};
+$("add").onclick=()=>{P.push({id:Date.now(),name:"STUDENT"+(P.length+1),job:"",present:"",permanent:"",mob:"",pos:"auto",x:50,y:50});store();render();select(P.length-1)};
+$("del").onclick=()=>{if(sel!==null&&confirm("Delete this person?")){P.splice(sel,1);sel=null;store();render()}};
+$("close").onclick=()=>{$("editor").classList.remove("show");editMode=false;photo.classList.remove("edit");$("edit").textContent="Edit / Add People";render()};
+$("reset").onclick=()=>{if(confirm("Reset to original sample data?")){P=JSON.parse(JSON.stringify(D));sel=null;store();render()}};
+photo.onclick=()=>{if(!editMode)closeP()};addEventListener("resize",()=>!editMode&&closeP());render();
+</script>
+</body></html>
