@@ -2,90 +2,178 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Group Directory</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Group Photo Directory</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f3f5f7;color:#18212b;font-family:Arial,sans-serif}
-.wrap{max-width:1400px;margin:auto;padding:10px}header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-h1{font-size:clamp(20px,3vw,30px);margin:4px 0 10px}.toolbar{display:flex;gap:7px}
-button{border:1px solid #d5dbe1;background:#fff;border-radius:8px;padding:10px 13px;font-size:14px}
-.primary{background:#1769aa;color:#fff;border-color:#1769aa}.danger{color:#b42318}
-.editor{display:none;background:#fff;border:1px solid #d5dbe1;border-radius:10px;padding:12px;margin-bottom:10px}.editor.show{display:block}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}label{font-size:12px;color:#66727e}
-input,select{display:block;width:100%;margin-top:4px;padding:10px;border:1px solid #d5dbe1;border-radius:7px;font-size:14px}
-.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.hint{font-size:12px;color:#66727e}
-.photo{position:relative;width:100%;overflow:hidden;background:#111;border-radius:10px;touch-action:manipulation}.photo img{display:block;width:100%;height:auto}
-.hot{position:absolute;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;border:2px solid transparent;background:transparent;cursor:pointer;touch-action:none}
-.edit .hot{border-color:#1769aa;background:#1769aa22}
-.pop{display:none;position:absolute;z-index:10;width:260px;max-width:calc(100vw - 20px);padding:13px;background:white;border:1px solid #d5dbe1;border-radius:11px;box-shadow:0 10px 30px #0003}
-.pop.show{display:block}.pop h2{font-size:18px;margin:0 25px 9px 0}.row{margin:6px 0}.lab{font-size:10px;text-transform:uppercase;color:#6c7782}.val{font-size:14px;line-height:1.3;word-break:break-word}
-.x{position:absolute;right:5px;top:4px;border:0;background:none;font-size:22px;padding:2px 7px}
-@media(max-width:700px){.wrap{padding:7px}.toolbar{width:100%}.toolbar button{flex:1}.grid{grid-template-columns:1fr}.hot{width:38px;height:38px}
-.pop{position:fixed!important;left:10px!important;right:10px!important;bottom:10px!important;top:auto!important;width:auto!important;max-width:none}}
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5f7;color:#172033;font-family:Arial,Helvetica,sans-serif}
+header{background:#fff;border-bottom:1px solid #dfe3e8;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+h1{font-size:20px;margin:0 0 3px}.status{font-size:12px;color:#667085}
+.controls{display:flex;gap:7px;flex-wrap:wrap}
+.btn{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:8px 12px;cursor:pointer}
+.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.btn.danger{color:#b42318}
+main{max-width:1500px;margin:18px auto;padding:0 12px}
+.photo-card{background:#fff;border:1px solid #dfe3e8;border-radius:12px;padding:9px;box-shadow:0 3px 12px rgba(0,0,0,.06)}
+.photo-wrap{position:relative;width:100%;line-height:0}
+.photo{display:block;width:100%;height:auto;border-radius:6px}
+.hotspot{position:absolute;border:2px solid transparent;background:transparent;border-radius:8px;padding:0;cursor:pointer;z-index:5}
+.hotspot:hover,.hotspot:focus,.hotspot.active{border-color:#fff;box-shadow:0 0 0 2px #2563eb;background:rgba(37,99,235,.10);outline:none}
+.popup{display:none;position:absolute;z-index:30;width:245px;background:#fff;color:#172033;border:1px solid #d7dce3;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.22);text-align:left;line-height:1.35;overflow:hidden}
+.hotspot:hover .popup,.hotspot:focus .popup,.hotspot.active .popup{display:block}
+.popup.auto{left:50%;top:calc(100% + 9px);transform:translateX(-50%)}
+.popup.right{left:calc(100% + 9px);top:0}
+.popup.left{right:calc(100% + 9px);top:0}
+.popup.above{left:50%;bottom:calc(100% + 9px);transform:translateX(-50%)}
+.popup.below{left:50%;top:calc(100% + 9px);transform:translateX(-50%)}
+.popup .title{background:#2563eb;color:#fff;padding:9px 11px;font-weight:700}
+.popup .body{padding:10px 11px;font-size:13px}.row{margin:5px 0}.label{font-weight:700;color:#344054}
+.popup .edit{margin-top:8px;width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer}
+.edit-mode .hotspot{border:2px dashed rgba(37,99,235,.8);background:rgba(37,99,235,.08);cursor:move}
+.edit-mode .hotspot::after{content:attr(data-label);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;line-height:1;background:#2563eb;color:#fff;padding:3px 5px;border-radius:4px;white-space:nowrap}
+.edit-mode .popup{display:none!important}
+.editorbar{display:none;background:#eef4ff;border:1px solid #cfe0ff;padding:9px 11px;border-radius:8px;margin-bottom:9px;font-size:13px}
+.editorbar.show{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.legend{font-size:12px;color:#667085;margin-top:9px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:100;align-items:center;justify-content:center;padding:14px}
+.modal.open{display:flex}.modal-box{width:min(560px,100%);background:#fff;border-radius:12px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-box h2{margin:0 0 14px;font-size:19px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}.full{grid-column:1/-1}label{font-size:12px;font-weight:700;color:#475467}
+input,select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px;background:#fff}
+.modal-actions{display:flex;justify-content:space-between;gap:8px;margin-top:16px}.right-actions{display:flex;gap:8px}
+.small{font-size:11px;color:#667085}
+@media(max-width:700px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.full{grid-column:auto}.popup{width:210px}}
 </style>
 </head>
 <body>
-<div class="wrap">
-<header><h1>Group Directory</h1><div class="toolbar"><button id="edit">Edit / Add People</button><button id="reset" class="danger">Reset</button></div></header>
-<div id="editor" class="editor">
-<div class="grid">
-<label>Name<input id="name"></label>
-<label>Job / Sector<input id="job"></label>
-<label>Present Location<input id="present"></label>
-<label>Permanent Location<input id="permanent"></label>
-<label>Mob Number<input id="mob"></label>
-<label>Popup Position<select id="pos"><option>auto</option><option>right</option><option>left</option><option>above</option><option>below</option></select></label>
+<header>
+ <div><h1>Group Photo Directory</h1><div class="status" id="status">Hover or tap a person to view details.</div></div>
+ <div class="controls">
+  <button class="btn primary" id="editModeBtn">Edit / Add People</button>
+  <button class="btn" id="resetBtn">Reset</button>
+ </div>
+</header>
+<main>
+ <div id="editorBar" class="editorbar">
+  <span><b>Edit mode:</b> drag a box onto a person's face. Click a box to edit that person's details.</span>
+  <button class="btn primary" id="addBtn">+ Add Person</button>
+ </div>
+ <div class="photo-card">
+  <div class="photo-wrap" id="photoWrap"><img class="photo" src="image1.jpg" alt="Group photograph"></div>
+  <div class="legend">Normal mode: names are hidden. Hover on desktop or tap on mobile to show the popup.</div>
+ </div>
+</main>
+
+<div class="modal" id="modal">
+ <div class="modal-box">
+  <h2 id="modalTitle">Edit Person</h2>
+  <form id="personForm">
+   <div class="grid">
+    <div class="field full"><label>Name</label><input id="fName" required></div>
+    <div class="field full"><label>Address</label><input id="fAddress"></div>
+    <div class="field"><label>Phone</label><input id="fPhone"></div>
+    <div class="field"><label>Email</label><input id="fEmail" type="email"></div>
+    <div class="field full"><label>Other details</label><input id="fOccupation"></div>
+    <div class="field full"><label>Popup position</label>
+      <select id="fPopup"><option value="auto">Auto / below</option><option value="right">Right</option><option value="left">Left</option><option value="above">Above</option><option value="below">Below</option></select>
+      <div class="small">You can change this separately for each person.</div>
+    </div>
+   </div>
+   <div class="modal-actions">
+    <button type="button" class="btn danger" id="deleteBtn">Delete person</button>
+    <div class="right-actions"><button type="button" class="btn" id="cancelBtn">Cancel</button><button type="submit" class="btn primary">Save</button></div>
+   </div>
+  </form>
+ </div>
 </div>
-<div class="actions"><button id="save" class="primary">Save Person</button><button id="add">+ Add Person</button><button id="del" class="danger">Delete Person</button><button id="close">Close</button></div>
-<div class="hint">Desktop: hover a person. Mobile: tap a person. Edit mode: drag the blue hotspot onto the face.</div>
-</div>
-<div id="photo" class="photo"><img src="image1.jpg" alt="Group photo"></div>
-</div>
+
 <script>
-const D=Array.from({length:31},(_,i)=>({id:i+1,name:"STUDENT"+(i+1),job:"",present:"",permanent:"",mob:"",pos:"auto",
-x:[7,13,18,23,28,33,38,43,48,53,58,63,68,73,78,83,88,93,10,20,30,40,50,60,70,80,90,25,45,65,85][i],
-y:[57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,57,36,36,36,36,36,36,36,36,36,20,20,20,20][i]}));
-let P=JSON.parse(localStorage.getItem("groupDirectoryPeople")||"null")||D, editMode=false,sel=null;
-const $=id=>document.getElementById(id), photo=$("photo");
-function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function store(){localStorage.setItem("groupDirectoryPeople",JSON.stringify(P))}
-function closeP(){document.querySelectorAll(".pop").forEach(x=>x.classList.remove("show"))}
-function popup(p){
-return '<button class="x">×</button><h2>'+esc(p.name)+'</h2>'+
-'<div class="row"><div class="lab">Job / Sector</div><div class="val">'+esc(p.job)||"—"+'</div></div>'+
-'<div class="row"><div class="lab">Present Location</div><div class="val">'+(esc(p.present)||"—")+'</div></div>'+
-'<div class="row"><div class="lab">Permanent Location</div><div class="val">'+(esc(p.permanent)||"—")+'</div></div>'+
-'<div class="row"><div class="lab">Mob Number</div><div class="val">'+(esc(p.mob)||"—")+'</div></div>'}
-function place(pop,h,p){
-if(innerWidth<=700){return}
-const r=photo.getBoundingClientRect(),q=h.getBoundingClientRect(),w=260;
-let l=q.left-r.left+45,t=q.top-r.top-5;
-if(p.pos=="left")l-=w+60;if(p.pos=="above"){l-=w/2;t-=190}if(p.pos=="below"){l-=w/2;t+=50}
-if(p.pos=="auto"&&l+w>r.width)l-=w+60;
-pop.style.left=Math.max(6,Math.min(l,r.width-w-6))+"px";pop.style.top=Math.max(6,t)+"px"}
-function show(i,h){closeP();let p=photo.querySelector('.pop[data-i="'+i+'"]');place(p,h,P[i]);p.classList.add("show")}
+const DEFAULT_DATA = [{"id": 1, "name": "STUDENT1", "address": "", "phone": "", "email": "", "occupation": "", "left": 15.8, "top": 7.0, "width": 7.0, "height": 22.0, "popup": "auto"}, {"id": 2, "name": "STUDENT2", "address": "", "phone": "", "email": "", "occupation": "", "left": 20.0, "top": 8.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 3, "name": "STUDENT3", "address": "", "phone": "", "email": "", "occupation": "", "left": 24.0, "top": 10.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 4, "name": "STUDENT4", "address": "", "phone": "", "email": "", "occupation": "", "left": 28.0, "top": 11.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 5, "name": "STUDENT5", "address": "", "phone": "", "email": "", "occupation": "", "left": 32.0, "top": 11.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 6, "name": "STUDENT6", "address": "", "phone": "", "email": "", "occupation": "", "left": 37.0, "top": 11.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 7, "name": "STUDENT7", "address": "", "phone": "", "email": "", "occupation": "", "left": 42.0, "top": 10.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 8, "name": "STUDENT8", "address": "", "phone": "", "email": "", "occupation": "", "left": 47.0, "top": 10.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 9, "name": "STUDENT9", "address": "", "phone": "", "email": "", "occupation": "", "left": 51.0, "top": 9.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 10, "name": "STUDENT10", "address": "", "phone": "", "email": "", "occupation": "", "left": 56.0, "top": 9.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 11, "name": "STUDENT11", "address": "", "phone": "", "email": "", "occupation": "", "left": 61.0, "top": 10.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 12, "name": "STUDENT12", "address": "", "phone": "", "email": "", "occupation": "", "left": 66.0, "top": 10.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 13, "name": "STUDENT13", "address": "", "phone": "", "email": "", "occupation": "", "left": 71.0, "top": 9.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 14, "name": "STUDENT14", "address": "", "phone": "", "email": "", "occupation": "", "left": 76.0, "top": 10.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 15, "name": "STUDENT15", "address": "", "phone": "", "email": "", "occupation": "", "left": 81.0, "top": 11.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 16, "name": "STUDENT16", "address": "", "phone": "", "email": "", "occupation": "", "left": 86.0, "top": 12.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 17, "name": "STUDENT17", "address": "", "phone": "", "email": "", "occupation": "", "left": 20.0, "top": 27.0, "width": 8.0, "height": 22.0, "popup": "auto"}, {"id": 18, "name": "STUDENT18", "address": "", "phone": "", "email": "", "occupation": "", "left": 29.0, "top": 36.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 19, "name": "STUDENT19", "address": "", "phone": "", "email": "", "occupation": "", "left": 38.0, "top": 38.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 20, "name": "STUDENT20", "address": "", "phone": "", "email": "", "occupation": "", "left": 47.0, "top": 39.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 21, "name": "STUDENT21", "address": "", "phone": "", "email": "", "occupation": "", "left": 56.0, "top": 40.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 22, "name": "STUDENT22", "address": "", "phone": "", "email": "", "occupation": "", "left": 65.0, "top": 40.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 23, "name": "STUDENT23", "address": "", "phone": "", "email": "", "occupation": "", "left": 74.0, "top": 40.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 24, "name": "STUDENT24", "address": "", "phone": "", "email": "", "occupation": "", "left": 83.0, "top": 39.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 25, "name": "STUDENT25", "address": "", "phone": "", "email": "", "occupation": "", "left": 19.0, "top": 62.0, "width": 8.0, "height": 23.0, "popup": "auto"}, {"id": 26, "name": "STUDENT26", "address": "", "phone": "", "email": "", "occupation": "", "left": 31.0, "top": 65.0, "width": 8.0, "height": 22.0, "popup": "auto"}, {"id": 27, "name": "STUDENT27", "address": "", "phone": "", "email": "", "occupation": "", "left": 42.0, "top": 67.0, "width": 8.0, "height": 21.0, "popup": "auto"}, {"id": 28, "name": "STUDENT28", "address": "", "phone": "", "email": "", "occupation": "", "left": 53.0, "top": 67.0, "width": 8.0, "height": 21.0, "popup": "auto"}, {"id": 29, "name": "STUDENT29", "address": "", "phone": "", "email": "", "occupation": "", "left": 64.0, "top": 65.0, "width": 8.0, "height": 22.0, "popup": "auto"}, {"id": 30, "name": "STUDENT30", "address": "", "phone": "", "email": "", "occupation": "", "left": 75.0, "top": 64.0, "width": 8.0, "height": 23.0, "popup": "auto"}, {"id": 31, "name": "STUDENT31", "address": "", "phone": "", "email": "", "occupation": "", "left": 86.0, "top": 63.0, "width": 7.0, "height": 24.0, "popup": "auto"}];
+let people = JSON.parse(localStorage.getItem('groupPhotoPeopleV2') || 'null') || DEFAULT_DATA;
+let editMode=false, editingId=null, drag=null;
+const wrap=document.getElementById('photoWrap'), modal=document.getElementById('modal');
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function save(){localStorage.setItem('groupPhotoPeopleV2',JSON.stringify(people));}
+function openEditor(id){
+ editingId=id; const p=people.find(x=>x.id===id); if(!p)return;
+ document.getElementById('modalTitle').textContent='Edit '+p.name;
+ document.getElementById('fName').value=p.name||'';
+ document.getElementById('fAddress').value=p.address||'';
+ document.getElementById('fPhone').value=p.phone||'';
+ document.getElementById('fEmail').value=p.email||'';
+ document.getElementById('fOccupation').value=p.occupation||'';
+ document.getElementById('fPopup').value=p.popup||'auto';
+ modal.classList.add('open'); document.getElementById('fName').focus();
+}
+function popupClass(p){return ['auto','right','left','above','below'].includes(p.popup)?p.popup:'auto';}
 function render(){
-closeP();photo.querySelectorAll(".hot,.pop").forEach(x=>x.remove());
-P.forEach((p,i)=>{
-let h=document.createElement("div");h.className="hot";h.style.left=p.x+"%";h.style.top=p.y+"%";
-let q=document.createElement("div");q.className="pop";q.dataset.i=i;q.innerHTML=popup(p);photo.append(h,q);
-h.onmouseenter=()=>!editMode&&show(i,h);h.onmouseleave=()=>!editMode&&setTimeout(()=>q.classList.remove("show"),250);
-h.onclick=e=>{e.stopPropagation();editMode?select(i):toggle(i,h)};
-h.ontouchend=e=>{if(!editMode){e.preventDefault();toggle(i,h)}};
-q.querySelector(".x").onclick=()=>q.classList.remove("show");
-if(editMode)drag(h,i);
-})}
-function toggle(i,h){let q=photo.querySelector('.pop[data-i="'+i+'"]'),was=q.classList.contains("show");closeP();if(!was)show(i,h)}
-function select(i){sel=i;let p=P[i];$("name").value=p.name;$("job").value=p.job;$("present").value=p.present;$("permanent").value=p.permanent;$("mob").value=p.mob;$("pos").value=p.pos}
-function drag(h,i){let down=false;h.onpointerdown=e=>{down=true;h.setPointerCapture(e.pointerId);e.preventDefault()};
-h.onpointermove=e=>{if(!down)return;let r=photo.getBoundingClientRect();P[i].x=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100));P[i].y=Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100));h.style.left=P[i].x+"%";h.style.top=P[i].y+"%"};
-h.onpointerup=()=>{down=false;store()}}
-$("edit").onclick=()=>{editMode=!editMode;$("editor").classList.toggle("show",editMode);photo.classList.toggle("edit",editMode);$("edit").textContent=editMode?"Exit Edit Mode":"Edit / Add People";render()};
-$("save").onclick=()=>{if(sel===null)return alert("Select a person first.");let p=P[sel];p.name=$("name").value.trim()||"STUDENT"+(sel+1);p.job=$("job").value.trim();p.present=$("present").value.trim();p.permanent=$("permanent").value.trim();p.mob=$("mob").value.trim();p.pos=$("pos").value;store();render();select(sel)};
-$("add").onclick=()=>{P.push({id:Date.now(),name:"STUDENT"+(P.length+1),job:"",present:"",permanent:"",mob:"",pos:"auto",x:50,y:50});store();render();select(P.length-1)};
-$("del").onclick=()=>{if(sel!==null&&confirm("Delete this person?")){P.splice(sel,1);sel=null;store();render()}};
-$("close").onclick=()=>{$("editor").classList.remove("show");editMode=false;photo.classList.remove("edit");$("edit").textContent="Edit / Add People";render()};
-$("reset").onclick=()=>{if(confirm("Reset to original sample data?")){P=JSON.parse(JSON.stringify(D));sel=null;store();render()}};
-photo.onclick=()=>{if(!editMode)closeP()};addEventListener("resize",()=>!editMode&&closeP());render();
+ wrap.querySelectorAll('.hotspot').forEach(e=>e.remove());
+ people.forEach(p=>{
+  const b=document.createElement('button'); b.type='button'; b.className='hotspot'; b.dataset.id=p.id; b.dataset.label=p.name;
+  b.style.left=p.left+'%'; b.style.top=p.top+'%'; b.style.width=p.width+'%'; b.style.height=p.height+'%';
+  b.setAttribute('aria-label',p.name);
+  const pop=document.createElement('div'); pop.className='popup '+popupClass(p);
+  pop.innerHTML=`<div class="title">${esc(p.name)}</div><div class="body">
+   ${p.address?`<div class="row"><span class="label">Address:</span> ${esc(p.address)}</div>`:''}
+   ${p.phone?`<div class="row"><span class="label">Phone:</span> ${esc(p.phone)}</div>`:''}
+   ${p.email?`<div class="row"><span class="label">Email:</span> ${esc(p.email)}</div>`:''}
+   ${p.occupation?`<div class="row"><span class="label">Other:</span> ${esc(p.occupation)}</div>`:''}
+   <button type="button" class="edit">Edit details</button></div>`;
+  b.appendChild(pop);
+  b.addEventListener('click',e=>{
+   if(editMode){e.stopPropagation();openEditor(p.id);}
+   else {document.querySelectorAll('.hotspot.active').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+  });
+  pop.querySelector('.edit').addEventListener('click',e=>{e.stopPropagation();openEditor(p.id);});
+  b.addEventListener('pointerdown',e=>{
+   if(!editMode || e.button===2)return;
+   e.preventDefault(); b.setPointerCapture(e.pointerId);
+   const r=wrap.getBoundingClientRect();
+   drag={id:p.id,startX:e.clientX,startY:e.clientY,origL:p.left,origT:p.top,r};
+  });
+  b.addEventListener('pointermove',e=>{
+   if(!drag || drag.id!==p.id)return;
+   const dx=(e.clientX-drag.startX)/drag.r.width*100, dy=(e.clientY-drag.startY)/drag.r.height*100;
+   p.left=Math.max(0,Math.min(100-p.width,drag.origL+dx)); p.top=Math.max(0,Math.min(100-p.height,drag.origT+dy));
+   b.style.left=p.left+'%'; b.style.top=p.top+'%';
+  });
+  b.addEventListener('pointerup',()=>{if(drag&&drag.id===p.id){save();drag=null;}});
+  wrap.appendChild(b);
+ });
+ wrap.parentElement.classList.toggle('edit-mode',editMode);
+}
+document.getElementById('editModeBtn').onclick=()=>{
+ editMode=!editMode;
+ document.getElementById('editorBar').classList.toggle('show',editMode);
+ document.getElementById('editModeBtn').textContent=editMode?'Done Editing':'Edit / Add People';
+ document.getElementById('status').textContent=editMode?'Drag boxes to position them, then click a box to edit it.':'Hover or tap a person to view details.';
+ render();
+};
+document.getElementById('addBtn').onclick=()=>{
+ const id=people.length?Math.max(...people.map(p=>p.id))+1:1;
+ const p={id,name:'STUDENT'+id,address:'',phone:'',email:'',occupation:'',left:45,top:45,width:7,height:12,popup:'auto'};
+ people.push(p); save(); render(); openEditor(id);
+};
+document.getElementById('personForm').addEventListener('submit',e=>{
+ e.preventDefault(); const p=people.find(x=>x.id===editingId); if(!p)return;
+ p.name=document.getElementById('fName').value.trim()||('STUDENT'+p.id);
+ p.address=document.getElementById('fAddress').value.trim();
+ p.phone=document.getElementById('fPhone').value.trim();
+ p.email=document.getElementById('fEmail').value.trim();
+ p.occupation=document.getElementById('fOccupation').value.trim();
+ p.popup=document.getElementById('fPopup').value;
+ save(); modal.classList.remove('open'); render();
+});
+document.getElementById('deleteBtn').onclick=()=>{
+ if(editingId==null)return;
+ if(confirm('Delete this person hotspot?')){people=people.filter(p=>p.id!==editingId);save();modal.classList.remove('open');render();}
+};
+document.getElementById('cancelBtn').onclick=()=>modal.classList.remove('open');
+modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
+document.getElementById('resetBtn').onclick=()=>{
+ if(confirm('Reset all people to the original sample data?')){localStorage.removeItem('groupPhotoPeopleV2');people=JSON.parse(JSON.stringify(DEFAULT_DATA));render();}
+};
+render();
 </script>
-</body></html>
+</body>
+</html>
