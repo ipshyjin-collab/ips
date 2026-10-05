@@ -91,11 +91,8 @@
   <div class="tools">
     <button class="btn" id="editBtn" type="button">Edit boxes</button>
     <button class="btn primary only-edit" id="addBtn" type="button">Add student</button>
-    <button class="btn only-edit" id="exportBtn" type="button">Export data</button>
-    <button class="btn only-edit" id="importBtn" type="button">Import data</button>
-    <button class="btn danger only-edit" id="resetBtn" type="button">Reset all</button>
-    <input type="file" id="importFile" accept="application/json" hidden>
     <p class="note" id="editNote"></p>
+    <p class="note" id="status" role="status"></p>
   </div>
 </main>
 
@@ -107,33 +104,59 @@
     <label>Current location<input type="text" id="fCur"></label>
     <label>Permanent location<input type="text" id="fPerm"></label>
     <label>Mobile number<input type="tel" id="fMob"></label>
-    <div class="foot"><span>Changes save automatically.</span><button type="button" class="btn primary" id="done">Done</button></div>
+    <div class="foot"><span>Changes are saved for everyone.</span><button type="button" class="btn primary" id="done">Done</button></div>
   </form>
 </dialog>
 
 <script>
-const KEY = 'group-photo-students-v1';
-const blank = { job:'', current:'', permanent:'', mobile:'' };
-const DEFAULTS = [
-  { id:1, name:'Student-1', x:12, y:30, w:10, h:34, ...blank },
-  { id:2, name:'Student-2', x:32, y:28, w:10, h:36, ...blank },
-  { id:3, name:'Student-3', x:52, y:30, w:10, h:34, ...blank },
-  { id:4, name:'Student-4', x:72, y:30, w:10, h:34, ...blank }
-];
-
-let students = load();
-let editing = false;
-
-function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(s) && s.length) return s; } catch(e){}
-  return JSON.parse(JSON.stringify(DEFAULTS));
-}
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(students)); } catch(e){} }
-
+const API = 'api.php';
+let students = [], editing = false;
 const photo = document.getElementById('photo'), img = document.getElementById('img'), dlg = document.getElementById('dlg');
+const statusEl = document.getElementById('status');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const clamp = (v,a,b) => Math.min(Math.max(v,a),b);
+const say = t => { statusEl.textContent = t; };
 
+/* ---------- server ---------- */
+async function api(body){
+  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  let d = null;
+  try { d = await r.json(); } catch(e){}
+  if (!r.ok || !d) {
+    const err = new Error(d && d.error ? d.error : `api.php did not answer correctly (HTTP ${r.status}). Check that api.php is uploaded in the same folder and PHP is enabled.`);
+    err.status = r.status; throw err;
+  }
+  return d;
+}
+let pending = 0;
+async function guarded(fn){
+  pending++;
+  try { await fn(); say(''); } catch(e){ say('Could not save: ' + e.message); }
+  finally { pending--; }
+}
+async function refresh(){
+  try {
+    const r = await fetch(API + '?t=' + Date.now(), { cache:'no-store' });
+    if (!r.ok) throw 0;
+    students = (await r.json()).students; say(''); render();
+  } catch(e){ say('Could not load student data. Check that api.php is uploaded next to this page.'); }
+}
+setInterval(() => { if (!editing && !dlg.open && !pending) refresh(); }, 20000);
+
+let layoutTimer;
+function saveLayout(){
+  clearTimeout(layoutTimer);
+  layoutTimer = setTimeout(() => guarded(() => api({ action:'layout',
+    students: students.map(({id,name,x,y,w,h}) => ({id,name,x,y,w,h})) })), 400);
+}
+const detailTimers = {};
+function saveDetails(s, now){
+  clearTimeout(detailTimers[s.id]);
+  const go = () => guarded(() => api({ action:'details', id:s.id, job:s.job, current:s.current, permanent:s.permanent, mobile:s.mobile }));
+  now ? go() : detailTimers[s.id] = setTimeout(go, 600);
+}
+
+/* ---------- photo boxes ---------- */
 function render(){
   photo.querySelectorAll('.spot').forEach(n => n.remove());
   students.forEach(s => {
@@ -146,7 +169,6 @@ function render(){
     el.innerHTML = `<div class="tip"><b>${esc(s.name)}</b><button type="button">More</button></div>
       <div class="elabel"><span>${esc(s.name)}</span><button type="button" title="Remove" aria-label="Remove ${esc(s.name)}">&times;</button></div>
       <div class="handle" title="Drag to resize"></div>`;
-
     el.querySelector('.tip button').addEventListener('click', e => { e.stopPropagation(); openDetails(s); });
     el.addEventListener('click', () => {
       if (editing) return;
@@ -154,18 +176,18 @@ function render(){
       photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open'));
       if (!was) el.classList.add('open');
     });
-    el.querySelector('.elabel button').addEventListener('click', e => {
+    const rm = el.querySelector('.elabel button');
+    rm.addEventListener('pointerdown', e => e.stopPropagation());
+    rm.addEventListener('click', e => {
       e.stopPropagation();
-      if (confirm(`Remove ${s.name}?`)) { students = students.filter(t => t !== s); save(); render(); }
+      if (confirm(`Remove ${s.name}? Their saved details will be deleted for everyone.`)) { students = students.filter(t => t !== s); saveLayout(); render(); }
     });
-    el.querySelector('.elabel button').addEventListener('pointerdown', e => e.stopPropagation());
     el.addEventListener('dblclick', () => { if (editing) openDetails(s); });
     wireDrag(el, s);
     photo.appendChild(el);
   });
 }
 
-/* drag to move, corner handle to resize */
 function wireDrag(el, s){
   const handle = el.querySelector('.handle');
   const pos = e => { const r = photo.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*100, (e.clientY-r.top)/r.height*100]; };
@@ -174,7 +196,7 @@ function wireDrag(el, s){
     const [sx,sy] = pos(e), o = { ...s };
     target.setPointerCapture(e.pointerId);
     const move = ev => { const [x,y] = pos(ev); onMove(o, x-sx, y-sy); el.style.cssText = `left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%`; };
-    const up = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', up); save(); };
+    const up = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', up); saveLayout(); };
     target.addEventListener('pointermove', move); target.addEventListener('pointerup', up);
   };
   el.addEventListener('pointerdown', e => {
@@ -187,68 +209,51 @@ function wireDrag(el, s){
   });
 }
 
-/* details form: blank by default, anyone can fill in */
+/* ---------- details window: anyone can fill in ---------- */
 let current = null;
 const F = { name:'fName', job:'fJob', current:'fCur', permanent:'fPerm', mobile:'fMob' };
 function openDetails(s){
   current = s;
   for (const k in F) document.getElementById(F[k]).value = s[k] || '';
-  document.getElementById('dTitle').textContent = s.name || 'Student details';
+    document.getElementById('dTitle').textContent = s.name || 'Student details';
   dlg.showModal();
 }
 for (const k in F) document.getElementById(F[k]).addEventListener('input', e => {
   if (!current) return;
-  current[k] = e.target.value; save();
-  if (k === 'name') document.getElementById('dTitle').textContent = e.target.value || 'Student details';
+  if (k === 'name') { current.name = e.target.value; document.getElementById('dTitle').textContent = e.target.value || 'Student details'; saveLayout(); }
+  else { current[k] = e.target.value; saveDetails(current); }
 });
-dlg.addEventListener('close', () => { if (!current.name.trim()) current.name = 'Student'; current = null; save(); render(); });
+dlg.addEventListener('close', () => {
+  if (current) {
+    if (!current.name.trim()) current.name = 'Student';
+    saveDetails(current, true);
+    current = null;
+  }
+  render();
+});
 document.getElementById('close').onclick = document.getElementById('done').onclick = () => dlg.close();
 dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 document.getElementById('form').addEventListener('submit', e => e.preventDefault());
 document.addEventListener('click', e => { if (!e.target.closest('.spot')) photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open')); });
 
-/* toolbar */
+/* ---------- toolbar (box editing needs the admin password) ---------- */
 const note = document.getElementById('editNote'), editBtn = document.getElementById('editBtn');
 editBtn.onclick = () => {
   editing = !editing;
   document.body.classList.toggle('editing', editing);
   editBtn.textContent = editing ? 'Done editing' : 'Edit boxes';
-  note.textContent = editing ? 'Drag a box to move it, drag its corner dot to resize, double-click it to edit details. Use × on a box to remove it.' : '';
+  note.textContent = editing ? 'Drag a box to move it, drag its corner dot to resize, double-click it to rename or edit details. Use × to remove a box.' : '';
   photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open'));
+  if (!editing) refresh();
 };
 document.getElementById('addBtn').onclick = () => {
   const n = students.reduce((m,s) => Math.max(m, parseInt((s.name.match(/(\d+)$/)||[0,0])[1],10)||0), 0) + 1;
-  students.push({ id:Date.now(), name:`Student-${n}`, x:45, y:35, w:10, h:34, ...blank });
-  save(); render();
-};
-document.getElementById('resetBtn').onclick = () => {
-  if (confirm('Reset all boxes and clear all details?')) { students = JSON.parse(JSON.stringify(DEFAULTS)); save(); render(); }
-};
-document.getElementById('exportBtn').onclick = () => {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(students,null,2)], {type:'application/json'}));
-  a.download = 'students.json'; a.click(); URL.revokeObjectURL(a.href);
-};
-const importFile = document.getElementById('importFile');
-document.getElementById('importBtn').onclick = () => importFile.click();
-importFile.onchange = () => {
-  const f = importFile.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    try {
-      const d = JSON.parse(r.result);
-      if (!Array.isArray(d) || !d.every(s => typeof s.x === 'number' && typeof s.y === 'number')) throw 0;
-      students = d.map((s,i) => ({ id:s.id||i+1, name:s.name||`Student-${i+1}`, x:s.x, y:s.y, w:s.w||10, h:s.h||34,
-        job:s.job||'', current:s.current||'', permanent:s.permanent||'', mobile:s.mobile||'' }));
-      save(); render();
-    } catch(e){ alert('That file is not a valid students.json export.'); }
-    importFile.value = '';
-  };
-  r.readAsText(f);
+  students.push({ id:'s' + Date.now().toString(36), name:`Student-${n}`, x:45, y:35, w:10, h:34, job:'', current:'', permanent:'', mobile:'' });
+  saveLayout(); render();
 };
 
 img.addEventListener('error', () => { img.style.display = 'none'; document.getElementById('missing').classList.add('show'); });
-render();
+refresh();
 </script>
 </body>
 </html>
