@@ -73,6 +73,16 @@
   .editing .tools .only-edit{display:inline-block}
   .tools .note{flex-basis:100%;margin:0}
       // @media (hover:none){.spot{border-color:rgba(255,255,255,.5)}}
+
+
+  @media (max-width:600px){
+    .tip{gap:6px;padding:3px 3px 3px 7px;font-size:.7rem;border-radius:6px;bottom:calc(100% + 6px)}
+    .spot.low .tip{top:calc(100% + 6px)}
+    .tip button{font-size:.65rem;padding:2px 7px}
+    .tip::after{width:7px;height:7px}
+  }
+
+  
 </style>
 </head>
 <body>
