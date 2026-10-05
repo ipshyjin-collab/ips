@@ -1,178 +1,253 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Group Photo Directory</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group photo</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#f3f5f7;color:#172033;font-family:Arial,Helvetica,sans-serif}
-header{background:#fff;border-bottom:1px solid #dfe3e8;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
-h1{font-size:20px;margin:0 0 3px}.status{font-size:12px;color:#667085}
-.controls{display:flex;gap:7px;flex-wrap:wrap}
-.btn{border:1px solid #cbd5e1;background:#fff;border-radius:7px;padding:8px 12px;cursor:pointer}
-.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.btn.danger{color:#b42318}
-main{max-width:1500px;margin:18px auto;padding:0 12px}
-.photo-card{background:#fff;border:1px solid #dfe3e8;border-radius:12px;padding:9px;box-shadow:0 3px 12px rgba(0,0,0,.06)}
-.photo-wrap{position:relative;width:100%;line-height:0}
-.photo{display:block;width:100%;height:auto;border-radius:6px}
-.hotspot{position:absolute;border:2px solid transparent;background:transparent;border-radius:8px;padding:0;cursor:pointer;z-index:5}
-.hotspot:hover,.hotspot:focus,.hotspot.active{border-color:#fff;box-shadow:0 0 0 2px #2563eb;background:rgba(37,99,235,.10);outline:none}
-.popup{display:none;position:absolute;z-index:30;width:245px;background:#fff;color:#172033;border:1px solid #d7dce3;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.22);text-align:left;line-height:1.35;overflow:hidden}
-.hotspot:hover .popup,.hotspot:focus .popup,.hotspot.active .popup{display:block}
-.popup.auto{left:50%;top:calc(100% + 9px);transform:translateX(-50%)}
-.popup.right{left:calc(100% + 9px);top:0}
-.popup.left{right:calc(100% + 9px);top:0}
-.popup.above{left:50%;bottom:calc(100% + 9px);transform:translateX(-50%)}
-.popup.below{left:50%;top:calc(100% + 9px);transform:translateX(-50%)}
-.popup .title{background:#2563eb;color:#fff;padding:9px 11px;font-weight:700}
-.popup .body{padding:10px 11px;font-size:13px}.row{margin:5px 0}.label{font-weight:700;color:#344054}
-.popup .edit{margin-top:8px;width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer}
-.edit-mode .hotspot{border:2px dashed rgba(37,99,235,.8);background:rgba(37,99,235,.08);cursor:move}
-.edit-mode .hotspot::after{content:attr(data-label);position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:11px;line-height:1;background:#2563eb;color:#fff;padding:3px 5px;border-radius:4px;white-space:nowrap}
-.edit-mode .popup{display:none!important}
-.editorbar{display:none;background:#eef4ff;border:1px solid #cfe0ff;padding:9px 11px;border-radius:8px;margin-bottom:9px;font-size:13px}
-.editorbar.show{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
-.legend{font-size:12px;color:#667085;margin-top:9px}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:100;align-items:center;justify-content:center;padding:14px}
-.modal.open{display:flex}.modal-box{width:min(560px,100%);background:#fff;border-radius:12px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.modal-box h2{margin:0 0 14px;font-size:19px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.field{display:flex;flex-direction:column;gap:4px}.full{grid-column:1/-1}label{font-size:12px;font-weight:700;color:#475467}
-input,select{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px;background:#fff}
-.modal-actions{display:flex;justify-content:space-between;gap:8px;margin-top:16px}.right-actions{display:flex;gap:8px}
-.small{font-size:11px;color:#667085}
-@media(max-width:700px){header{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.full{grid-column:auto}.popup{width:210px}}
+  :root{--bg:#f3f5f4;--ink:#17262b;--muted:#5d6f74;--card:#fff;--line:#d5dddc;--accent:#0f6e75;--accent-ink:#fff;--danger:#b3261e}
+  @media (prefers-color-scheme:dark){:root{--bg:#121b1e;--ink:#e8f0ef;--muted:#9bb0b3;--card:#1b282c;--line:#2e4044;--accent:#5cc3ca;--accent-ink:#0b1a1c;--danger:#ff8a80}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+  main{max-width:1000px;margin:0 auto;padding:24px 16px 48px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  p.hint{margin:0 0 16px;color:var(--muted)}
+
+  .photo{position:relative;line-height:0;user-select:none;-webkit-user-select:none}
+  .photo img{width:100%;height:auto;border-radius:8px;display:block}
+
+  .spot{position:absolute;border:2px solid transparent;border-radius:6px;cursor:pointer;
+        transition:border-color .15s,background .15s}
+  .spot:hover,.spot:focus-visible,.spot.open{border-color:#fff;background:rgba(255,255,255,.14);
+        box-shadow:0 0 0 2px var(--accent);outline:none}
+
+  .tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);
+       display:none;align-items:center;gap:10px;white-space:nowrap;line-height:1.3;
+       background:var(--card);color:var(--ink);padding:8px 8px 8px 12px;border-radius:8px;
+       border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5;cursor:default}
+  .tip::after{content:"";position:absolute;left:50%;top:100%;width:10px;height:10px;background:var(--card);
+       border:solid var(--line);border-width:0 1px 1px 0;transform:translate(-50%,-5px) rotate(45deg)}
+  .tip::before{content:"";position:absolute;left:0;right:0;top:100%;height:12px}
+  .spot:hover .tip,.spot:focus-within .tip,.spot.open .tip{display:flex}
+  .spot.low .tip{bottom:auto;top:calc(100% + 10px)}
+  .spot.low .tip::after{top:auto;bottom:100%;transform:translate(-50%,5px) rotate(225deg)}
+  .spot.low .tip::before{top:auto;bottom:100%}
+  .tip b{font-weight:600}
+  .tip button,.btn.primary{font:inherit;font-size:.85rem;border:0;border-radius:6px;padding:5px 12px;cursor:pointer;
+       background:var(--accent);color:var(--accent-ink)}
+  .tip button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* layout-edit mode */
+  .elabel,.handle{display:none}
+  .editing .tip{display:none!important}
+  .editing .spot{cursor:move;touch-action:none;border:2px dashed #fff;background:rgba(15,110,117,.22);
+       box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+  .editing .elabel{display:flex;position:absolute;left:0;bottom:calc(100% + 2px);gap:4px;align-items:center;line-height:1.2;
+       background:var(--accent);color:var(--accent-ink);font-size:.75rem;padding:2px 4px 2px 6px;border-radius:4px;white-space:nowrap}
+  .spot.low .elabel{bottom:auto;top:calc(100% + 2px)}
+  .elabel button{border:0;background:none;color:inherit;cursor:pointer;font-size:.9rem;line-height:1;padding:0 2px}
+  .editing .handle{display:block;position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;border-radius:50%;
+       background:#fff;border:2px solid var(--accent);cursor:nwse-resize;touch-action:none}
+
+  dialog{border:1px solid var(--line);border-radius:12px;padding:0;width:min(420px,calc(100% - 32px));
+       background:var(--card);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  dialog::backdrop{background:rgba(10,20,22,.55)}
+  .head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .head h2{margin:0;font-size:1.15rem}
+  .x{border:0;background:none;color:var(--muted);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px}
+  form{padding:6px 20px 20px;margin:0}
+  label{display:block;margin-top:14px;font-size:.85rem;color:var(--muted)}
+  input[type=text],input[type=tel]{width:100%;margin-top:3px;font:inherit;color:var(--ink);background:var(--bg);
+       border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+  input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-size:.8rem;color:var(--muted)}
+
+  .missing{display:none;padding:24px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+  .missing.show{display:block}
+
+  .tools{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{font:inherit;font-size:.9rem;padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  .btn.primary{border-color:var(--accent);padding:6px 14px;font-size:.9rem}
+  .btn.danger{color:var(--danger)}
+  .tools .only-edit{display:none}
+  .editing .tools .only-edit{display:inline-block}
+  .tools .note{flex-basis:100%;margin:0}
+  @media (hover:none){.spot{border-color:rgba(255,255,255,.5)}}
 </style>
 </head>
 <body>
-<header>
- <div><h1>Group Photo Directory</h1><div class="status" id="status">Hover or tap a person to view details.</div></div>
- <div class="controls">
-  <button class="btn primary" id="editModeBtn">Edit / Add People</button>
-  <button class="btn" id="resetBtn">Reset</button>
- </div>
-</header>
 <main>
- <div id="editorBar" class="editorbar">
-  <span><b>Edit mode:</b> drag a box onto a person's face. Click a box to edit that person's details.</span>
-  <button class="btn primary" id="addBtn">+ Add Person</button>
- </div>
- <div class="photo-card">
-  <div class="photo-wrap" id="photoWrap"><img class="photo" src="image1.jpg" alt="Group photograph"></div>
-  <div class="legend">Normal mode: names are hidden. Hover on desktop or tap on mobile to show the popup.</div>
- </div>
+  <h1>Our group</h1>
+  <p class="hint">Hover over a student to see the name, then choose More to view or fill in details.</p>
+
+  <div class="photo" id="photo">
+    <img id="img" src="image1.jpg" alt="Group photo">
+  </div>
+  <div class="missing" id="missing">
+    Photo not found. Save your group photo as <b>image1.jpg</b> in the same folder as this page
+    (or change the file name in the <code>&lt;img&gt;</code> tag).
+  </div>
+
+  <div class="tools">
+    <button class="btn" id="editBtn" type="button">Edit boxes</button>
+    <button class="btn primary only-edit" id="addBtn" type="button">Add student</button>
+    <button class="btn only-edit" id="exportBtn" type="button">Export data</button>
+    <button class="btn only-edit" id="importBtn" type="button">Import data</button>
+    <button class="btn danger only-edit" id="resetBtn" type="button">Reset all</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+    <p class="note" id="editNote"></p>
+  </div>
 </main>
 
-<div class="modal" id="modal">
- <div class="modal-box">
-  <h2 id="modalTitle">Edit Person</h2>
-  <form id="personForm">
-   <div class="grid">
-    <div class="field full"><label>Name</label><input id="fName" required></div>
-    <div class="field full"><label>Address</label><input id="fAddress"></div>
-    <div class="field"><label>Phone</label><input id="fPhone"></div>
-    <div class="field"><label>Email</label><input id="fEmail" type="email"></div>
-    <div class="field full"><label>Other details</label><input id="fOccupation"></div>
-    <div class="field full"><label>Popup position</label>
-      <select id="fPopup"><option value="auto">Auto / below</option><option value="right">Right</option><option value="left">Left</option><option value="above">Above</option><option value="below">Below</option></select>
-      <div class="small">You can change this separately for each person.</div>
-    </div>
-   </div>
-   <div class="modal-actions">
-    <button type="button" class="btn danger" id="deleteBtn">Delete person</button>
-    <div class="right-actions"><button type="button" class="btn" id="cancelBtn">Cancel</button><button type="submit" class="btn primary">Save</button></div>
-   </div>
+<dialog id="dlg" aria-labelledby="dTitle">
+  <div class="head"><h2 id="dTitle">Student details</h2><button class="x" id="close" aria-label="Close">&times;</button></div>
+  <form id="form" autocomplete="off">
+    <label>Name<input type="text" id="fName"></label>
+    <label>Job / sector<input type="text" id="fJob"></label>
+    <label>Current location<input type="text" id="fCur"></label>
+    <label>Permanent location<input type="text" id="fPerm"></label>
+    <label>Mobile number<input type="tel" id="fMob"></label>
+    <div class="foot"><span>Changes save automatically.</span><button type="button" class="btn primary" id="done">Done</button></div>
   </form>
- </div>
-</div>
+</dialog>
 
 <script>
-const DEFAULT_DATA = [{"id": 1, "name": "STUDENT1", "address": "", "phone": "", "email": "", "occupation": "", "left": 15.8, "top": 7.0, "width": 7.0, "height": 22.0, "popup": "auto"}, {"id": 2, "name": "STUDENT2", "address": "", "phone": "", "email": "", "occupation": "", "left": 20.0, "top": 8.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 3, "name": "STUDENT3", "address": "", "phone": "", "email": "", "occupation": "", "left": 24.0, "top": 10.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 4, "name": "STUDENT4", "address": "", "phone": "", "email": "", "occupation": "", "left": 28.0, "top": 11.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 5, "name": "STUDENT5", "address": "", "phone": "", "email": "", "occupation": "", "left": 32.0, "top": 11.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 6, "name": "STUDENT6", "address": "", "phone": "", "email": "", "occupation": "", "left": 37.0, "top": 11.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 7, "name": "STUDENT7", "address": "", "phone": "", "email": "", "occupation": "", "left": 42.0, "top": 10.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 8, "name": "STUDENT8", "address": "", "phone": "", "email": "", "occupation": "", "left": 47.0, "top": 10.0, "width": 6.0, "height": 18.0, "popup": "auto"}, {"id": 9, "name": "STUDENT9", "address": "", "phone": "", "email": "", "occupation": "", "left": 51.0, "top": 9.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 10, "name": "STUDENT10", "address": "", "phone": "", "email": "", "occupation": "", "left": 56.0, "top": 9.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 11, "name": "STUDENT11", "address": "", "phone": "", "email": "", "occupation": "", "left": 61.0, "top": 10.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 12, "name": "STUDENT12", "address": "", "phone": "", "email": "", "occupation": "", "left": 66.0, "top": 10.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 13, "name": "STUDENT13", "address": "", "phone": "", "email": "", "occupation": "", "left": 71.0, "top": 9.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 14, "name": "STUDENT14", "address": "", "phone": "", "email": "", "occupation": "", "left": 76.0, "top": 10.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 15, "name": "STUDENT15", "address": "", "phone": "", "email": "", "occupation": "", "left": 81.0, "top": 11.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 16, "name": "STUDENT16", "address": "", "phone": "", "email": "", "occupation": "", "left": 86.0, "top": 12.0, "width": 6.0, "height": 19.0, "popup": "auto"}, {"id": 17, "name": "STUDENT17", "address": "", "phone": "", "email": "", "occupation": "", "left": 20.0, "top": 27.0, "width": 8.0, "height": 22.0, "popup": "auto"}, {"id": 18, "name": "STUDENT18", "address": "", "phone": "", "email": "", "occupation": "", "left": 29.0, "top": 36.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 19, "name": "STUDENT19", "address": "", "phone": "", "email": "", "occupation": "", "left": 38.0, "top": 38.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 20, "name": "STUDENT20", "address": "", "phone": "", "email": "", "occupation": "", "left": 47.0, "top": 39.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 21, "name": "STUDENT21", "address": "", "phone": "", "email": "", "occupation": "", "left": 56.0, "top": 40.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 22, "name": "STUDENT22", "address": "", "phone": "", "email": "", "occupation": "", "left": 65.0, "top": 40.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 23, "name": "STUDENT23", "address": "", "phone": "", "email": "", "occupation": "", "left": 74.0, "top": 40.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 24, "name": "STUDENT24", "address": "", "phone": "", "email": "", "occupation": "", "left": 83.0, "top": 39.0, "width": 7.0, "height": 19.0, "popup": "auto"}, {"id": 25, "name": "STUDENT25", "address": "", "phone": "", "email": "", "occupation": "", "left": 19.0, "top": 62.0, "width": 8.0, "height": 23.0, "popup": "auto"}, {"id": 26, "name": "STUDENT26", "address": "", "phone": "", "email": "", "occupation": "", "left": 31.0, "top": 65.0, "width": 8.0, "height": 22.0, "popup": "auto"}, {"id": 27, "name": "STUDENT27", "address": "", "phone": "", "email": "", "occupation": "", "left": 42.0, "top": 67.0, "width": 8.0, "height": 21.0, "popup": "auto"}, {"id": 28, "name": "STUDENT28", "address": "", "phone": "", "email": "", "occupation": "", "left": 53.0, "top": 67.0, "width": 8.0, "height": 21.0, "popup": "auto"}, {"id": 29, "name": "STUDENT29", "address": "", "phone": "", "email": "", "occupation": "", "left": 64.0, "top": 65.0, "width": 8.0, "height": 22.0, "popup": "auto"}, {"id": 30, "name": "STUDENT30", "address": "", "phone": "", "email": "", "occupation": "", "left": 75.0, "top": 64.0, "width": 8.0, "height": 23.0, "popup": "auto"}, {"id": 31, "name": "STUDENT31", "address": "", "phone": "", "email": "", "occupation": "", "left": 86.0, "top": 63.0, "width": 7.0, "height": 24.0, "popup": "auto"}];
-let people = JSON.parse(localStorage.getItem('groupPhotoPeopleV2') || 'null') || DEFAULT_DATA;
-let editMode=false, editingId=null, drag=null;
-const wrap=document.getElementById('photoWrap'), modal=document.getElementById('modal');
+const KEY = 'group-photo-students-v1';
+const blank = { job:'', current:'', permanent:'', mobile:'' };
+const DEFAULTS = [
+  { id:1, name:'Student-1', x:12, y:30, w:10, h:34, ...blank },
+  { id:2, name:'Student-2', x:32, y:28, w:10, h:36, ...blank },
+  { id:3, name:'Student-3', x:52, y:30, w:10, h:34, ...blank },
+  { id:4, name:'Student-4', x:72, y:30, w:10, h:34, ...blank }
+];
 
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function save(){localStorage.setItem('groupPhotoPeopleV2',JSON.stringify(people));}
-function openEditor(id){
- editingId=id; const p=people.find(x=>x.id===id); if(!p)return;
- document.getElementById('modalTitle').textContent='Edit '+p.name;
- document.getElementById('fName').value=p.name||'';
- document.getElementById('fAddress').value=p.address||'';
- document.getElementById('fPhone').value=p.phone||'';
- document.getElementById('fEmail').value=p.email||'';
- document.getElementById('fOccupation').value=p.occupation||'';
- document.getElementById('fPopup').value=p.popup||'auto';
- modal.classList.add('open'); document.getElementById('fName').focus();
+let students = load();
+let editing = false;
+
+function load(){
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (Array.isArray(s) && s.length) return s; } catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS));
 }
-function popupClass(p){return ['auto','right','left','above','below'].includes(p.popup)?p.popup:'auto';}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(students)); } catch(e){} }
+
+const photo = document.getElementById('photo'), img = document.getElementById('img'), dlg = document.getElementById('dlg');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp = (v,a,b) => Math.min(Math.max(v,a),b);
+
 function render(){
- wrap.querySelectorAll('.hotspot').forEach(e=>e.remove());
- people.forEach(p=>{
-  const b=document.createElement('button'); b.type='button'; b.className='hotspot'; b.dataset.id=p.id; b.dataset.label=p.name;
-  b.style.left=p.left+'%'; b.style.top=p.top+'%'; b.style.width=p.width+'%'; b.style.height=p.height+'%';
-  b.setAttribute('aria-label',p.name);
-  const pop=document.createElement('div'); pop.className='popup '+popupClass(p);
-  pop.innerHTML=`<div class="title">${esc(p.name)}</div><div class="body">
-   ${p.address?`<div class="row"><span class="label">Address:</span> ${esc(p.address)}</div>`:''}
-   ${p.phone?`<div class="row"><span class="label">Phone:</span> ${esc(p.phone)}</div>`:''}
-   ${p.email?`<div class="row"><span class="label">Email:</span> ${esc(p.email)}</div>`:''}
-   ${p.occupation?`<div class="row"><span class="label">Other:</span> ${esc(p.occupation)}</div>`:''}
-   <button type="button" class="edit">Edit details</button></div>`;
-  b.appendChild(pop);
-  b.addEventListener('click',e=>{
-   if(editMode){e.stopPropagation();openEditor(p.id);}
-   else {document.querySelectorAll('.hotspot.active').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+  photo.querySelectorAll('.spot').forEach(n => n.remove());
+  students.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'spot' + (s.y < 22 ? ' low' : '');
+    el.tabIndex = 0;
+    el.setAttribute('role','group');
+    el.setAttribute('aria-label', s.name);
+    el.style.cssText = `left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%`;
+    el.innerHTML = `<div class="tip"><b>${esc(s.name)}</b><button type="button">More</button></div>
+      <div class="elabel"><span>${esc(s.name)}</span><button type="button" title="Remove" aria-label="Remove ${esc(s.name)}">&times;</button></div>
+      <div class="handle" title="Drag to resize"></div>`;
+
+    el.querySelector('.tip button').addEventListener('click', e => { e.stopPropagation(); openDetails(s); });
+    el.addEventListener('click', () => {
+      if (editing) return;
+      const was = el.classList.contains('open');
+      photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open'));
+      if (!was) el.classList.add('open');
+    });
+    el.querySelector('.elabel button').addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm(`Remove ${s.name}?`)) { students = students.filter(t => t !== s); save(); render(); }
+    });
+    el.querySelector('.elabel button').addEventListener('pointerdown', e => e.stopPropagation());
+    el.addEventListener('dblclick', () => { if (editing) openDetails(s); });
+    wireDrag(el, s);
+    photo.appendChild(el);
   });
-  pop.querySelector('.edit').addEventListener('click',e=>{e.stopPropagation();openEditor(p.id);});
-  b.addEventListener('pointerdown',e=>{
-   if(!editMode || e.button===2)return;
-   e.preventDefault(); b.setPointerCapture(e.pointerId);
-   const r=wrap.getBoundingClientRect();
-   drag={id:p.id,startX:e.clientX,startY:e.clientY,origL:p.left,origT:p.top,r};
-  });
-  b.addEventListener('pointermove',e=>{
-   if(!drag || drag.id!==p.id)return;
-   const dx=(e.clientX-drag.startX)/drag.r.width*100, dy=(e.clientY-drag.startY)/drag.r.height*100;
-   p.left=Math.max(0,Math.min(100-p.width,drag.origL+dx)); p.top=Math.max(0,Math.min(100-p.height,drag.origT+dy));
-   b.style.left=p.left+'%'; b.style.top=p.top+'%';
-  });
-  b.addEventListener('pointerup',()=>{if(drag&&drag.id===p.id){save();drag=null;}});
-  wrap.appendChild(b);
- });
- wrap.parentElement.classList.toggle('edit-mode',editMode);
 }
-document.getElementById('editModeBtn').onclick=()=>{
- editMode=!editMode;
- document.getElementById('editorBar').classList.toggle('show',editMode);
- document.getElementById('editModeBtn').textContent=editMode?'Done Editing':'Edit / Add People';
- document.getElementById('status').textContent=editMode?'Drag boxes to position them, then click a box to edit it.':'Hover or tap a person to view details.';
- render();
-};
-document.getElementById('addBtn').onclick=()=>{
- const id=people.length?Math.max(...people.map(p=>p.id))+1:1;
- const p={id,name:'STUDENT'+id,address:'',phone:'',email:'',occupation:'',left:45,top:45,width:7,height:12,popup:'auto'};
- people.push(p); save(); render(); openEditor(id);
-};
-document.getElementById('personForm').addEventListener('submit',e=>{
- e.preventDefault(); const p=people.find(x=>x.id===editingId); if(!p)return;
- p.name=document.getElementById('fName').value.trim()||('STUDENT'+p.id);
- p.address=document.getElementById('fAddress').value.trim();
- p.phone=document.getElementById('fPhone').value.trim();
- p.email=document.getElementById('fEmail').value.trim();
- p.occupation=document.getElementById('fOccupation').value.trim();
- p.popup=document.getElementById('fPopup').value;
- save(); modal.classList.remove('open'); render();
+
+/* drag to move, corner handle to resize */
+function wireDrag(el, s){
+  const handle = el.querySelector('.handle');
+  const pos = e => { const r = photo.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*100, (e.clientY-r.top)/r.height*100]; };
+  const run = (target, e, onMove) => {
+    e.preventDefault(); e.stopPropagation();
+    const [sx,sy] = pos(e), o = { ...s };
+    target.setPointerCapture(e.pointerId);
+    const move = ev => { const [x,y] = pos(ev); onMove(o, x-sx, y-sy); el.style.cssText = `left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%`; };
+    const up = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', up); save(); };
+    target.addEventListener('pointermove', move); target.addEventListener('pointerup', up);
+  };
+  el.addEventListener('pointerdown', e => {
+    if (!editing || e.target === handle) return;
+    run(el, e, (o,dx,dy) => { s.x = clamp(o.x+dx, 0, 100-s.w); s.y = clamp(o.y+dy, 0, 100-s.h); });
+  });
+  handle.addEventListener('pointerdown', e => {
+    if (!editing) return;
+    run(handle, e, (o,dx,dy) => { s.w = clamp(o.w+dx, 2, 100-s.x); s.h = clamp(o.h+dy, 2, 100-s.y); });
+  });
+}
+
+/* details form: blank by default, anyone can fill in */
+let current = null;
+const F = { name:'fName', job:'fJob', current:'fCur', permanent:'fPerm', mobile:'fMob' };
+function openDetails(s){
+  current = s;
+  for (const k in F) document.getElementById(F[k]).value = s[k] || '';
+  document.getElementById('dTitle').textContent = s.name || 'Student details';
+  dlg.showModal();
+}
+for (const k in F) document.getElementById(F[k]).addEventListener('input', e => {
+  if (!current) return;
+  current[k] = e.target.value; save();
+  if (k === 'name') document.getElementById('dTitle').textContent = e.target.value || 'Student details';
 });
-document.getElementById('deleteBtn').onclick=()=>{
- if(editingId==null)return;
- if(confirm('Delete this person hotspot?')){people=people.filter(p=>p.id!==editingId);save();modal.classList.remove('open');render();}
+dlg.addEventListener('close', () => { if (!current.name.trim()) current.name = 'Student'; current = null; save(); render(); });
+document.getElementById('close').onclick = document.getElementById('done').onclick = () => dlg.close();
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+document.getElementById('form').addEventListener('submit', e => e.preventDefault());
+document.addEventListener('click', e => { if (!e.target.closest('.spot')) photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open')); });
+
+/* toolbar */
+const note = document.getElementById('editNote'), editBtn = document.getElementById('editBtn');
+editBtn.onclick = () => {
+  editing = !editing;
+  document.body.classList.toggle('editing', editing);
+  editBtn.textContent = editing ? 'Done editing' : 'Edit boxes';
+  note.textContent = editing ? 'Drag a box to move it, drag its corner dot to resize, double-click it to edit details. Use × on a box to remove it.' : '';
+  photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open'));
 };
-document.getElementById('cancelBtn').onclick=()=>modal.classList.remove('open');
-modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open');});
-document.getElementById('resetBtn').onclick=()=>{
- if(confirm('Reset all people to the original sample data?')){localStorage.removeItem('groupPhotoPeopleV2');people=JSON.parse(JSON.stringify(DEFAULT_DATA));render();}
+document.getElementById('addBtn').onclick = () => {
+  const n = students.reduce((m,s) => Math.max(m, parseInt((s.name.match(/(\d+)$/)||[0,0])[1],10)||0), 0) + 1;
+  students.push({ id:Date.now(), name:`Student-${n}`, x:45, y:35, w:10, h:34, ...blank });
+  save(); render();
 };
+document.getElementById('resetBtn').onclick = () => {
+  if (confirm('Reset all boxes and clear all details?')) { students = JSON.parse(JSON.stringify(DEFAULTS)); save(); render(); }
+};
+document.getElementById('exportBtn').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(students,null,2)], {type:'application/json'}));
+  a.download = 'students.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+const importFile = document.getElementById('importFile');
+document.getElementById('importBtn').onclick = () => importFile.click();
+importFile.onchange = () => {
+  const f = importFile.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!Array.isArray(d) || !d.every(s => typeof s.x === 'number' && typeof s.y === 'number')) throw 0;
+      students = d.map((s,i) => ({ id:s.id||i+1, name:s.name||`Student-${i+1}`, x:s.x, y:s.y, w:s.w||10, h:s.h||34,
+        job:s.job||'', current:s.current||'', permanent:s.permanent||'', mobile:s.mobile||'' }));
+      save(); render();
+    } catch(e){ alert('That file is not a valid students.json export.'); }
+    importFile.value = '';
+  };
+  r.readAsText(f);
+};
+
+img.addEventListener('error', () => { img.style.display = 'none'; document.getElementById('missing').classList.add('show'); });
 render();
 </script>
 </body>
