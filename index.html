@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Group photo</title>
+<style>
+  :root{--bg:#f3f5f4;--ink:#17262b;--muted:#5d6f74;--card:#fff;--line:#d5dddc;--accent:#0f6e75;--accent-ink:#fff;--danger:#b3261e}
+  @media (prefers-color-scheme:dark){:root{--bg:#121b1e;--ink:#e8f0ef;--muted:#9bb0b3;--card:#1b282c;--line:#2e4044;--accent:#5cc3ca;--accent-ink:#0b1a1c;--danger:#ff8a80}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+  main{max-width:1000px;margin:0 auto;padding:24px 16px 48px}
+  h1{font-size:1.5rem;margin:0 0 4px}
+  p.hint{margin:0 0 16px;color:var(--muted)}
+
+  .photo{position:relative;line-height:0;user-select:none;-webkit-user-select:none}
+  .photo img{width:100%;height:auto;border-radius:8px;display:block}
+
+  .spot{position:absolute;border:2px solid transparent;border-radius:6px;cursor:pointer;
+        transition:border-color .15s,background .15s}
+  .spot:hover,.spot:focus-visible,.spot.open{border-color:#fff;background:rgba(255,255,255,.14);
+        box-shadow:0 0 0 2px var(--accent);outline:none}
+
+  .tip{position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);
+       display:none;align-items:center;gap:10px;white-space:nowrap;line-height:1.3;
+       background:var(--card);color:var(--ink);padding:8px 8px 8px 12px;border-radius:8px;
+       border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:5;cursor:default}
+  .tip::after{content:"";position:absolute;left:50%;top:100%;width:10px;height:10px;background:var(--card);
+       border:solid var(--line);border-width:0 1px 1px 0;transform:translate(-50%,-5px) rotate(45deg)}
+  .tip::before{content:"";position:absolute;left:0;right:0;top:100%;height:12px}
+  .spot:hover .tip,.spot:focus-within .tip,.spot.open .tip{display:flex}
+  .spot.low .tip{bottom:auto;top:calc(100% + 10px)}
+  .spot.low .tip::after{top:auto;bottom:100%;transform:translate(-50%,5px) rotate(225deg)}
+  .spot.low .tip::before{top:auto;bottom:100%}
+  .tip b{font-weight:600}
+  .tip button,.btn.primary{font:inherit;font-size:.85rem;border:0;border-radius:6px;padding:5px 12px;cursor:pointer;
+       background:var(--accent);color:var(--accent-ink)}
+  .tip button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* layout-edit mode */
+  .elabel,.handle{display:none}
+  .editing .tip{display:none!important}
+  .editing .spot{cursor:move;touch-action:none;border:2px dashed #fff;background:rgba(15,110,117,.22);
+       box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+  .editing .elabel{display:flex;position:absolute;left:0;bottom:calc(100% + 2px);gap:4px;align-items:center;line-height:1.2;
+       background:var(--accent);color:var(--accent-ink);font-size:.75rem;padding:2px 4px 2px 6px;border-radius:4px;white-space:nowrap}
+  .spot.low .elabel{bottom:auto;top:calc(100% + 2px)}
+  .elabel button{border:0;background:none;color:inherit;cursor:pointer;font-size:.9rem;line-height:1;padding:0 2px}
+  .editing .handle{display:block;position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;border-radius:50%;
+       background:#fff;border:2px solid var(--accent);cursor:nwse-resize;touch-action:none}
+
+  dialog{border:1px solid var(--line);border-radius:12px;padding:0;width:min(420px,calc(100% - 32px));
+       background:var(--card);color:var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  dialog::backdrop{background:rgba(10,20,22,.55)}
+  .head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .head h2{margin:0;font-size:1.15rem}
+  .x{border:0;background:none;color:var(--muted);font-size:1.5rem;line-height:1;cursor:pointer;padding:0 4px}
+  form{padding:6px 20px 20px;margin:0}
+  label{display:block;margin-top:14px;font-size:.85rem;color:var(--muted)}
+  input[type=text],input[type=tel]{width:100%;margin-top:3px;font:inherit;color:var(--ink);background:var(--bg);
+       border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+  input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-size:.8rem;color:var(--muted)}
+
+  .missing{display:none;padding:24px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+  .missing.show{display:block}
+
+  .tools{margin-top:24px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{font:inherit;font-size:.9rem;padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+  .btn.primary{border-color:var(--accent);padding:6px 14px;font-size:.9rem}
+  .btn.danger{color:var(--danger)}
+  .tools .only-edit{display:none}
+  .editing .tools .only-edit{display:inline-block}
+  .tools .note{flex-basis:100%;margin:0}
+  @media (hover:none){.spot{border-color:rgba(255,255,255,.5)}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Our group</h1>
+  <p class="hint">Hover over a student to see the name, then choose More to view or fill in details.</p>
+
+  <div class="photo" id="photo">
+    <img id="img" src="image1.jpg" alt="Group photo">
+  </div>
+  <div class="missing" id="missing">
+    Photo not found. Save your group photo as <b>image1.jpg</b> in the same folder as this page
+    (or change the file name in the <code>&lt;img&gt;</code> tag).
+  </div>
+
+  <div class="tools">
+    <button class="btn" id="editBtn" type="button">Edit boxes</button>
+    <button class="btn primary only-edit" id="addBtn" type="button">Add student</button>
+    <p class="note" id="editNote"></p>
+    <p class="note" id="status" role="status"></p>
+  </div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dTitle">
+  <div class="head"><h2 id="dTitle">Student details</h2><button class="x" id="close" aria-label="Close">&times;</button></div>
+  <form id="form" autocomplete="off">
+    <label>Name<input type="text" id="fName"></label>
+    <label>Job / sector<input type="text" id="fJob"></label>
+    <label>Current location<input type="text" id="fCur"></label>
+    <label>Permanent location<input type="text" id="fPerm"></label>
+    <label>Mobile number<input type="tel" id="fMob"></label>
+    <div class="foot"><span>Changes are saved for everyone.</span><button type="button" class="btn primary" id="done">Done</button></div>
+  </form>
+</dialog>
+
+<script>
+// Paste your Supabase values between the quotes (Project Settings > API)
+const SUPABASE_URL = 'https://dqwolrkdtgxscnkymwrg.supabase.co/rest/v1/';      // e.g. https://abcdxyz.supabase.co
+const SUPABASE_KEY = 'sb_publishable_kKGOJmBXsaZ8us32LzKwWw_kRRsIxIj';  // the "anon" / "publishable" key, safe to put in a web page
+let students = [], editing = false;
+const photo = document.getElementById('photo'), img = document.getElementById('img'), dlg = document.getElementById('dlg');
+const statusEl = document.getElementById('status');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const clamp = (v,a,b) => Math.min(Math.max(v,a),b);
+const say = t => { statusEl.textContent = t; };
+
+/* ---------- Supabase ---------- */
+const configured = () => SUPABASE_URL.startsWith('https://') && SUPABASE_KEY.length > 20;
+async function sb(path, method = 'GET', body){
+  if (!configured()) throw new Error('Supabase URL and key have not been added to index.html yet.');
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/students${path}`, {
+    method, cache:'no-store',
+    headers:{ apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY, 'Content-Type':'application/json',
+              Prefer: method === 'GET' ? '' : 'return=minimal' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.message || `Supabase error ${r.status}`); }
+  return method === 'GET' ? r.json() : null;
+}
+const fromRow = r => ({ id:r.id, name:r.name, x:+r.x, y:+r.y, w:+r.w, h:+r.h,
+  job:r.job, current:r.current_location, permanent:r.permanent_location, mobile:r.mobile });
+
+let pending = 0;
+async function guarded(fn){
+  pending++;
+  try { await fn(); say(''); } catch(e){ say('Could not save: ' + e.message); }
+  finally { pending--; }
+}
+async function refresh(){
+  if (!configured()) { say('Add your Supabase URL and key near the top of the script in index.html.'); return; }
+  try {
+    students = (await sb('?select=*&order=created_at.asc,id.asc')).map(fromRow);
+    say(''); render();
+  } catch(e){ say('Could not load student data: ' + e.message); }
+}
+setInterval(() => { if (!editing && !dlg.open && !pending) refresh(); }, 20000);
+
+const eid = s => encodeURIComponent(s.id);
+const timers = {};
+function debounced(key, fn, ms = 500){ clearTimeout(timers[key]); timers[key] = setTimeout(() => guarded(fn), ms); }
+const saveBox = s => debounced('box' + s.id, () => sb(`?id=eq.${eid(s)}`, 'PATCH', { name:s.name, x:s.x, y:s.y, w:s.w, h:s.h }));
+function saveDetails(s, now){
+  const fn = () => sb(`?id=eq.${eid(s)}`, 'PATCH', { job:s.job, current_location:s.current, permanent_location:s.permanent, mobile:s.mobile });
+  now ? (clearTimeout(timers['d' + s.id]), guarded(fn)) : debounced('d' + s.id, fn, 600);
+}
+const addStudent = s => guarded(() => sb('', 'POST', { id:s.id, name:s.name, x:s.x, y:s.y, w:s.w, h:s.h }));
+const removeStudent = s => guarded(() => sb(`?id=eq.${eid(s)}`, 'DELETE'));
+
+/* ---------- photo boxes ---------- */
+function render(){
+  photo.querySelectorAll('.spot').forEach(n => n.remove());
+  students.forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'spot' + (s.y < 22 ? ' low' : '');
+    el.tabIndex = 0;
+    el.setAttribute('role','group');
+    el.setAttribute('aria-label', s.name);
+    el.style.cssText = `left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%`;
+    el.innerHTML = `<div class="tip"><b>${esc(s.name)}</b><button type="button">More</button></div>
+      <div class="elabel"><span>${esc(s.name)}</span><button type="button" title="Remove" aria-label="Remove ${esc(s.name)}">&times;</button></div>
+      <div class="handle" title="Drag to resize"></div>`;
+    el.querySelector('.tip button').addEventListener('click', e => { e.stopPropagation(); openDetails(s); });
+    el.addEventListener('click', () => {
+      if (editing) return;
+      const was = el.classList.contains('open');
+      photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open'));
+      if (!was) el.classList.add('open');
+    });
+    const rm = el.querySelector('.elabel button');
+    rm.addEventListener('pointerdown', e => e.stopPropagation());
+    rm.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm(`Remove ${s.name}? Their saved details will be deleted for everyone.`)) { students = students.filter(t => t !== s); removeStudent(s); render(); }
+    });
+    el.addEventListener('dblclick', () => { if (editing) openDetails(s); });
+    wireDrag(el, s);
+    photo.appendChild(el);
+  });
+}
+
+function wireDrag(el, s){
+  const handle = el.querySelector('.handle');
+  const pos = e => { const r = photo.getBoundingClientRect(); return [(e.clientX-r.left)/r.width*100, (e.clientY-r.top)/r.height*100]; };
+  const run = (target, e, onMove) => {
+    e.preventDefault(); e.stopPropagation();
+    const [sx,sy] = pos(e), o = { ...s };
+    target.setPointerCapture(e.pointerId);
+    const move = ev => { const [x,y] = pos(ev); onMove(o, x-sx, y-sy); el.style.cssText = `left:${s.x}%;top:${s.y}%;width:${s.w}%;height:${s.h}%`; };
+    const up = () => { target.removeEventListener('pointermove', move); target.removeEventListener('pointerup', up); saveBox(s); };
+    target.addEventListener('pointermove', move); target.addEventListener('pointerup', up);
+  };
+  el.addEventListener('pointerdown', e => {
+    if (!editing || e.target === handle) return;
+    run(el, e, (o,dx,dy) => { s.x = clamp(o.x+dx, 0, 100-s.w); s.y = clamp(o.y+dy, 0, 100-s.h); });
+  });
+  handle.addEventListener('pointerdown', e => {
+    if (!editing) return;
+    run(handle, e, (o,dx,dy) => { s.w = clamp(o.w+dx, 2, 100-s.x); s.h = clamp(o.h+dy, 2, 100-s.y); });
+  });
+}
+
+/* ---------- details window: anyone can fill in ---------- */
+let current = null;
+const F = { name:'fName', job:'fJob', current:'fCur', permanent:'fPerm', mobile:'fMob' };
+function openDetails(s){
+  current = s;
+  for (const k in F) document.getElementById(F[k]).value = s[k] || '';
+    document.getElementById('dTitle').textContent = s.name || 'Student details';
+  dlg.showModal();
+}
+for (const k in F) document.getElementById(F[k]).addEventListener('input', e => {
+  if (!current) return;
+  if (k === 'name') { current.name = e.target.value; document.getElementById('dTitle').textContent = e.target.value || 'Student details'; saveBox(current); }
+  else { current[k] = e.target.value; saveDetails(current); }
+});
+dlg.addEventListener('close', () => {
+  if (current) {
+    if (!current.name.trim()) current.name = 'Student';
+    saveDetails(current, true);
+    current = null;
+  }
+  render();
+});
+document.getElementById('close').onclick = document.getElementById('done').onclick = () => dlg.close();
+dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+document.getElementById('form').addEventListener('submit', e => e.preventDefault());
+document.addEventListener('click', e => { if (!e.target.closest('.spot')) photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open')); });
+
+/* ---------- toolbar (box editing needs the admin password) ---------- */
+const note = document.getElementById('editNote'), editBtn = document.getElementById('editBtn');
+editBtn.onclick = () => {
+  editing = !editing;
+  document.body.classList.toggle('editing', editing);
+  editBtn.textContent = editing ? 'Done editing' : 'Edit boxes';
+  note.textContent = editing ? 'Drag a box to move it, drag its corner dot to resize, double-click it to rename or edit details. Use × to remove a box.' : '';
+  photo.querySelectorAll('.spot.open').forEach(n => n.classList.remove('open'));
+  if (!editing) refresh();
+};
+document.getElementById('addBtn').onclick = () => {
+  const n = students.reduce((m,s) => Math.max(m, parseInt((s.name.match(/(\d+)$/)||[0,0])[1],10)||0), 0) + 1;
+  const s = { id:'s' + Date.now().toString(36), name:`Student-${n}`, x:45, y:35, w:10, h:34, job:'', current:'', permanent:'', mobile:'' };
+  students.push(s); addStudent(s); render();
+};
+
+img.addEventListener('error', () => { img.style.display = 'none'; document.getElementById('missing').classList.add('show'); });
+refresh();
+</script>
+</body>
+</html>
