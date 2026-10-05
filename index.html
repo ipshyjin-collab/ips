@@ -109,7 +109,8 @@
 </dialog>
 
 <script>
-const API = 'api.php';
+// Paste your Google Apps Script web app URL between the quotes (it ends with /exec)
+const API = 'PASTE_YOUR_WEB_APP_URL_HERE';
 let students = [], editing = false;
 const photo = document.getElementById('photo'), img = document.getElementById('img'), dlg = document.getElementById('dlg');
 const statusEl = document.getElementById('status');
@@ -119,13 +120,12 @@ const say = t => { statusEl.textContent = t; };
 
 /* ---------- server ---------- */
 async function api(body){
-  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  if (!API.startsWith('https://')) throw new Error('The web app URL has not been added to index.html yet.');
+  // text/plain avoids a browser preflight request, which Apps Script does not answer
+  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body) });
   let d = null;
   try { d = await r.json(); } catch(e){}
-  if (!r.ok || !d) {
-    const err = new Error(d && d.error ? d.error : `api.php did not answer correctly (HTTP ${r.status}). Check that api.php is uploaded in the same folder and PHP is enabled.`);
-    err.status = r.status; throw err;
-  }
+  if (!d || d.error) throw new Error(d && d.error ? d.error : 'The server did not answer correctly. Check the web app URL and that access is set to Anyone.');
   return d;
 }
 let pending = 0;
@@ -135,11 +135,13 @@ async function guarded(fn){
   finally { pending--; }
 }
 async function refresh(){
+  if (!API.startsWith('https://')) { say('Add your Google Apps Script web app URL to index.html (the API line near the top of the script).'); return; }
   try {
     const r = await fetch(API + '?t=' + Date.now(), { cache:'no-store' });
-    if (!r.ok) throw 0;
-    students = (await r.json()).students; say(''); render();
-  } catch(e){ say('Could not load student data. Check that api.php is uploaded next to this page.'); }
+    const d = await r.json();
+    if (!d.students) throw new Error(d.error || 'No data returned');
+    students = d.students; say(''); render();
+  } catch(e){ say('Could not load student data. Check the web app URL in index.html and that the deployment access is set to Anyone.'); }
 }
 setInterval(() => { if (!editing && !dlg.open && !pending) refresh(); }, 20000);
 
